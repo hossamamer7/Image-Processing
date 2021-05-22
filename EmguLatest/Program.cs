@@ -83,27 +83,56 @@ namespace slabDraft
                 .Canny(0, 255);
 
             Image<Gray, byte> im = new Image<Gray, byte>(img.Width, img.Height);
+            Image<Gray, byte> imgS = new Image<Gray, byte>(img.Width, img.Height);
+
 
             //Find Contours && Lines from contours :
             VectorOfVectorOfPoint contors = new VectorOfVectorOfPoint();
             Mat hier = new Mat();
 
+            VectorOfVectorOfPoint contors_M = new VectorOfVectorOfPoint();
+            Mat hier_M = new Mat();
+
             CvInvoke.FindContours(imgOut, contors, hier, Emgu.CV.CvEnum.RetrType.External, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
             
             List<Vector3> vertices = new List<Vector3>();
-
+            //List<Point> vertices2D = new List<Point>();
             for (int i = 0; i < contors.Size; i++)
             {
                 for (int j = 0; j < contors[i].Size; j++)
                 {
                     vertices.Add(new Vector3(contors[i][j].X, contors[i][j].Y, 0));
-                } 
+                    //vertices2D.Add(new Point(contors[i][j].X, contors[i][j].Y));
+                }
             }
 
-               var query = vertices.GroupBy(x => x)   ////Repeated Points
+            CvInvoke.DrawContours(imgS, contors, -1, new MCvScalar(255, 255, 255));
+
+            var query = vertices.GroupBy(x => x)   ////Repeated Points
               .Where(g => g.Count() > 1)
               .Select(y => y.Key)
               .ToList();
+
+            for (int i = 0; i < query.Count; i++)
+            {
+                System.Drawing.Point p = new System.Drawing.Point((int)query.ElementAt(i).X, (int)query.ElementAt(i).Y);
+                CvInvoke.Circle(imgS, p, 0, new MCvScalar(0, 0, 0), 1);
+            }
+
+            imgS.Save("d://im/plan121.bmp");
+
+            CvInvoke.FindContours(imgS, contors_M, hier_M, Emgu.CV.CvEnum.RetrType.External, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
+
+
+            var maxX = contors_M.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.X);
+            var minX = contors_M.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.X);
+            var maxY = contors_M.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.Y);
+            var minY = contors_M.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.Y);
+
+            var contorsList = contors_M.ToArrayOfArray().ToList()
+                .Where(z=>z.ToList().Any(p=>p.Y== minY || p.Y == minY+5 || p.Y == minY - 5))
+                .Where(p=>p.Length>4).ToList();
+            
 
             var unique = vertices.Except(query).ToList();
             #region MyRegion
@@ -151,77 +180,90 @@ namespace slabDraft
             //    Console.WriteLine(Points.ElementAt(i).X.ToString() + " , " + Points.ElementAt(i).Y.ToString());
             //} 
             #endregion
-            for(int i=0;i< unique.Count;i++)
+            ////for (int i = 0; i < unique.Count; i++)
+            ////{
+            ////    System.Drawing.Point p = new System.Drawing.Point((int)unique.ElementAt(i).X, (int)unique.ElementAt(i).Y);
+            ////    CvInvoke.Circle(im, p, 0, new MCvScalar(255, 255, 255), 1);
+            ////}
+            foreach (var p in contorsList)
             {
-                System.Drawing.Point p = new System.Drawing.Point((int)unique.ElementAt(i).X, (int)unique.ElementAt(i).Y);
-                CvInvoke.Circle(im, p, 0, new MCvScalar(255, 255, 255), 2);
+                foreach (var pt in p)
+                {
+                    CvInvoke.Circle(im, pt, 0, new MCvScalar(255, 255, 255), 1);
+                }
             }
             //for (int i = 0; i < query.Count; i++)
             //{
             //    System.Drawing.Point p = new System.Drawing.Point((int)query.ElementAt(i).X, (int)query.ElementAt(i).Y);
             //    CvInvoke.Circle(img, p, 0, new MCvScalar(51, 42, 42), 4);
             //}
-            im.Save("d://im/plan3.bmp");
+            im.Save("d://im/plan123.bmp");
 
             #region
-            //    Image<Gray, byte> imgOut2 = img.Convert<Gray, byte>().ThresholdBinary(new Gray(100), new Gray(255));
-            //    VectorOfVectorOfPoint contors2 = new VectorOfVectorOfPoint();
-            //    Mat hier2 = new Mat();
-            //    CvInvoke.FindContours(imgOut2, contors2, hier2, Emgu.CV.CvEnum.RetrType.External, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
-            //    Console.WriteLine(contors2.Size);
+            //Image<Gray, byte> imgOut2 = img.Convert<Gray, byte>().ThresholdBinary(new Gray(100), new Gray(255));
+            //VectorOfVectorOfPoint contors2 = new VectorOfVectorOfPoint();
+            //Mat hier2 = new Mat();
+            CvInvoke.FindContours(imgOut, contors, hier, Emgu.CV.CvEnum.RetrType.External, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
+            Console.WriteLine(contors.Size);
 
-            //    int index = 0;
+            int index = 0;
+            VectorOfVectorOfPoint contors2 = new VectorOfVectorOfPoint();
 
-            //    for (int i = 0; i < contors2.Size; i++)
-            //    {
-            //        VectorOfPoint approx = new VectorOfPoint();
-            //        double perimeter = CvInvoke.ArcLength(contors2[i], true);
-            //        CvInvoke.ApproxPolyDP(contors2[i], approx, 0.04 * perimeter, true);
-            //        if (approx.Size == 2)
-            //        {
-            //            List<Vector3> verticess = new List<Vector3>();
-            //            index = i;
-            //            for (int j = 0; j < contors2[index].Size; j++)
-            //            {
-            //                verticess.Add(new Vector3(contors2[index][j].X, contors2[index][j].Y * -1, 0));
-            //            }
-            //            List<Vector3> ord = Ordering(verticess);
-            //            Vector3 P1 = ord[0];
-            //            Vector3 P2 = ord[ord.Count - 1];
-            //            Line L = new Line(P1, P2);
-            //            string Message = GetLineType(ord);
-            //            verticess.Add(new Vector3(contors2[index][0].X, contors2[index][0].Y * -1, 0));
-            //            Polyline grids = new Polyline(verticess);
-            //            grids.Layer = new Layer("Grids");
-            //            grids.Layer.Color = AciColor.Blue;
-            //            dxfDocument.AddEntity(grids);
-            //            #region MyRegion
-            //            //if (Message == "Vertical Line")
-            //            //{
-            //            //    VerticalLines.Add(L);
-            //            //}
-            //            //else if (Message == "Horizontal Line")
-            //            //{
-            //            //    HorizontalLines.Add(L);
-            //            //} 
-            //            #endregion
-            //        }
+            for (int i = 0; i < contors.Size; i++)
+            {
+                //VectorOfPoint approx = new VectorOfPoint();
+                //double perimeter = CvInvoke.ArcLength(contors[i], true);
+                //CvInvoke.ApproxPolyDP(contors[i], approx, 0.04 * perimeter, true);
+                //if (approx.Size > 4)
+                //{
+                //    List<Vector3> verticess = new List<Vector3>();
+                //    index = i;
+                //    for (int j = 0; j < contors[index].Size; j++)
+                //    {
+                //        verticess.Add(new Vector3(contors[index][j].X, contors[index][j].Y * -1, 0));
+                //    }
+                //    contors2.Push(approx);
+                //    CvInvoke.DrawContours(im, contors2, -1, new MCvScalar(255, 0, 0));
+                //    im.Save("d://im/plan107.bmp");
 
-            //        if (approx.Size > 3)
-            //        {
-            //            List<Vector3> verticess = new List<Vector3>();
-            //            index = i;
-            //            for (int j = 0; j < contors2[index].Size; j++)
-            //            {
-            //                verticess.Add(new Vector3(contors2[index][j].X, contors2[index][j].Y * -1, 0));
-            //            }
-            //            verticess.Add(new Vector3(contors2[index][0].X, contors2[index][0].Y * -1, 0));
-            //            Polyline Circle = new Polyline(verticess);
-            //            Circle.Layer = new Layer("Bubbles");
-            //            Circle.Layer.Color = AciColor.Red;
-            //            dxfDocument.AddEntity(Circle);
-            //        }
-            //    }
+                    //            List<Vector3> ord = Ordering(verticess);
+                    //            Vector3 P1 = ord[0];
+                    //            Vector3 P2 = ord[ord.Count - 1];
+                    //            Line L = new Line(P1, P2);
+                    //            string Message = GetLineType(ord);
+                    //            verticess.Add(new Vector3(contors2[index][0].X, contors2[index][0].Y * -1, 0));
+                    //            Polyline grids = new Polyline(verticess);
+                    //            grids.Layer = new Layer("Grids");
+                    //            grids.Layer.Color = AciColor.Blue;
+                    //            dxfDocument.AddEntity(grids);
+                    #region MyRegion
+                    //            //if (Message == "Vertical Line")
+                    //            //{
+                    //            //    VerticalLines.Add(L);
+                    //            //}
+                    //            //else if (Message == "Horizontal Line")
+                    //            //{
+                    //            //    HorizontalLines.Add(L);
+                    //            //} 
+                    #endregion
+                    //        }
+
+                    //        if (approx.Size > 3)
+                    //        {
+                    //            List<Vector3> verticess = new List<Vector3>();
+                    //            index = i;
+                    //            for (int j = 0; j < contors2[index].Size; j++)
+                    //            {
+                    //                verticess.Add(new Vector3(contors2[index][j].X, contors2[index][j].Y * -1, 0));
+                    //            }
+                    //            verticess.Add(new Vector3(contors2[index][0].X, contors2[index][0].Y * -1, 0));
+                    //            Polyline Circle = new Polyline(verticess);
+                    //            Circle.Layer = new Layer("Bubbles");
+                    //            Circle.Layer.Color = AciColor.Red;
+                    //            dxfDocument.AddEntity(Circle);
+                    //        }
+                //}
+            }
             #endregion
             //    dxfDocument.DrawingVariables.AcadVer = DxfVersion.AutoCad2010;
             //    dxfDocument.Save("d://dxfs/draftIntersection2.dxf");  /////////////
