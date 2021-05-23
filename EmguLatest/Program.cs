@@ -112,6 +112,7 @@ namespace slabDraft
               .Where(g => g.Count() > 1)
               .Select(y => y.Key)
               .ToList();
+            var verticesWithoutRepeating = vertices.Distinct().ToList();
 
             for (int i = 0; i < query.Count; i++)
             {
@@ -130,7 +131,7 @@ namespace slabDraft
             var minY = contors_M.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.Y);
 
             var contorsList = contors_M.ToArrayOfArray().ToList()
-                .Where(z=>z.ToList().Any(p=>p.Y== minY || p.Y == minY+5 || p.Y == minY - 5))
+                .Where(z=>z.ToList().Any(p=>p.Y== minY))
                 .Where(p=>p.Length>4).ToList();
             
 
@@ -200,6 +201,14 @@ namespace slabDraft
             im.Save("d://im/plan123.bmp");
 
             #region
+            
+            
+            
+            
+            
+            
+            
+            
             //Image<Gray, byte> imgOut2 = img.Convert<Gray, byte>().ThresholdBinary(new Gray(100), new Gray(255));
             //VectorOfVectorOfPoint contors2 = new VectorOfVectorOfPoint();
             //Mat hier2 = new Mat();
