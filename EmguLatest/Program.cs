@@ -79,8 +79,8 @@ namespace slabDraft
             Image<Gray, byte> img = ~imgo;  //////////////////////////////////
 
             Image<Gray, byte> imgOut = img.Convert<Gray, byte>()
-                .ThresholdBinary(new Gray(0), new Gray(255))
-                .Canny(0, 255);
+                .ThresholdBinary(new Gray(100), new Gray(255))
+                ;
 
             Image<Gray, byte> im = new Image<Gray, byte>(img.Width, img.Height);
 
@@ -88,8 +88,9 @@ namespace slabDraft
             VectorOfVectorOfPoint contors = new VectorOfVectorOfPoint();
             Mat hier = new Mat();
 
-            CvInvoke.FindContours(imgOut, contors, hier, Emgu.CV.CvEnum.RetrType.External, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
-            
+            CvInvoke.FindContours(imgOut, contors, hier, Emgu.CV.CvEnum.RetrType.List, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
+            CvInvoke.DrawContours(im, contors, -1, new MCvScalar(255, 255, 255));
+
             List<Vector3> vertices = new List<Vector3>();
 
             for (int i = 0; i < contors.Size; i++)
@@ -151,17 +152,17 @@ namespace slabDraft
             //    Console.WriteLine(Points.ElementAt(i).X.ToString() + " , " + Points.ElementAt(i).Y.ToString());
             //} 
             #endregion
-            for(int i=0;i< unique.Count;i++)
-            {
-                System.Drawing.Point p = new System.Drawing.Point((int)unique.ElementAt(i).X, (int)unique.ElementAt(i).Y);
-                CvInvoke.Circle(im, p, 0, new MCvScalar(255, 255, 255), 2);
-            }
+            //for(int i=0;i< unique.Count;i++)
+            //{
+            //    System.Drawing.Point p = new System.Drawing.Point((int)unique.ElementAt(i).X, (int)unique.ElementAt(i).Y);
+            //    CvInvoke.Circle(im, p, 0, new MCvScalar(255, 255, 255), 2);
+            //}
             //for (int i = 0; i < query.Count; i++)
             //{
             //    System.Drawing.Point p = new System.Drawing.Point((int)query.ElementAt(i).X, (int)query.ElementAt(i).Y);
             //    CvInvoke.Circle(img, p, 0, new MCvScalar(51, 42, 42), 4);
             //}
-            im.Save("d://im/plan3.bmp");
+            im.Save("d://im/planDraft5.bmp");
 
             #region
             //    Image<Gray, byte> imgOut2 = img.Convert<Gray, byte>().ThresholdBinary(new Gray(100), new Gray(255));
