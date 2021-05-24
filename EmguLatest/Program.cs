@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -57,10 +57,10 @@ namespace slabDraft
         }
 
         //Function to return ordered list of points 
-        static List<Vector3> Ordering(List<Vector3> vertex)
+        static List<Vector2> Ordering(List<Vector2> vertex)
         {
-            List<Vector3> OrderedList = new List<Vector3>();
-            OrderedList = (List<Vector3>)vertex.OrderBy(p => p.X).ToList();
+            List<Vector2> OrderedList = new List<Vector2>();
+            OrderedList = (List<Vector2>)vertex.OrderBy(p => p.X).ToList();
             return OrderedList;
         }
         static List<Vector3> Ordering2(List<Vector3> vertex)
@@ -74,7 +74,7 @@ namespace slabDraft
         {
             DxfDocument dxfDocument = new DxfDocument();
 
-            string fileName = "d://im/plan.PNG";
+            string fileName = "e://new.jpg";
             Image<Gray, byte> imgo = new Image<Gray, byte>(fileName);
             Image<Gray, byte> img = ~imgo;  //////////////////////////////////
 
@@ -98,135 +98,213 @@ namespace slabDraft
                 for (int j = 0; j < contors[i].Size; j++)
                 {
                     vertices.Add(new Vector3(contors[i][j].X, contors[i][j].Y, 0));
-                } 
+                }
             }
 
-               var query = vertices.GroupBy(x => x)   ////Repeated Points
-              .Where(g => g.Count() > 1)
-              .Select(y => y.Key)
-              .ToList();
+            var query = vertices.GroupBy(x => x)   ////Repeated Points
+           .Where(g => g.Count() > 1)
+           .Select(y => y.Key)
+           .ToList();
 
             var unique = vertices.Except(query).ToList();
-            #region MyRegion
-            //List<Vector3> repeated = new List<Vector3>();
+            
+           
+            im.Save("e://planDraft5.bmp");
 
+            var maxX = contors.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.X);
+            var minX = contors.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.X);
+            var maxY = contors.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.Y);
+            var minY = contors.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.Y);
 
+            var contorsList_Min_Y = contors.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.Y == minY))
+                .Where(p => p.Length > 4).ToList();
 
-            //for (int a = 0; a < contors.Size; a++)
+            var contorsList_Max_Y = contors.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.Y == maxY))
+                .Where(p => p.Length > 4).ToList();
+
+            var contorsList_Max_X = contors.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.X == maxX))
+                .Where(p => p.Length > 4).ToList();
+
+            var contorsList_Min_X = contors.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.X == minX))
+                .Where(p => p.Length > 4).ToList();
+            Image<Gray, byte> ims = new Image<Gray, byte>(img.Width, img.Height);
+           
+            foreach (var p in contorsList_Max_X)
+            {
+                foreach(var pt in p)
+                {
+                    CvInvoke.Circle(ims, pt, 0, new MCvScalar(255, 255, 255), 1);
+                }
+            }
+
+            ims.Save("e://planDraft13.bmp");
+
+            //List<Point> Starts_HZ = new List<Point>();
+            //List<Point> Ends_HZ = new List<Point>();
+
+            //foreach (var p in contorsList_Max_X)
             //{
-            //    for (int i = 0; i < contors[a].Size; i++)
+            //    Point P1 = p.OrderBy(p0 => p0.X).First();
+            //    Starts_HZ.Add(P1);
+
+            //}
+            //for (int i = 0; i < Starts_HZ.Count; i++)
+            //{
+            //    Console.WriteLine(Starts_HZ[i].X.ToString() + " , " + Starts_HZ[i].Y.ToString());
+            //}
+            //Console.WriteLine("///////////////////////////////////////////");
+            //foreach (var p in contorsList_Min_X)
+            //{
+            //    Point P1 = p.OrderBy(p0 => p0.X).Last();
+            //    Ends_HZ.Add(P1);
+            //}
+            //for (int i = 0; i < Ends_HZ.Count; i++)
+            //{
+            //    Console.WriteLine(Ends_HZ[i].X.ToString() + " , " + Ends_HZ[i].Y.ToString());
+            //}
+            //List<Point> Ends_Mod = new List<Point>();
+            //for (int i = 0; i < Starts_HZ.Count; i++)
+            //{
+            //    for (int j = 0; j < Ends_HZ.Count; j++)
             //    {
-            //        Vector3 basePoint = vertices[i];
-            //        for (int j = 0; j < contors[a].Size; j++)
+            //        if (Starts_HZ[i].Y == Ends_HZ[j].Y)
             //        {
-            //            if (i == j)
-            //            {
-            //                continue;
-            //            }
-            //            else
-            //            {
-            //                if (vertices[i] == vertices[j])
-            //                {
-            //                    repeated.Add(new Vector3(vertices[j].X, vertices[j].Y, 0));
-            //                }
-            //            }
-            //        }
-            //    } 
-            //}
-            //Stack<Vector3> Points = new Stack<Vector3>();
-
-            //for (int i = 0; i < repeated.Count; i++)
-            //{
-            //    if (i == repeated.Count - 1)
-            //    {
-            //        Points.Push(repeated[repeated.Count - 1]);
-            //        break;
-            //    }
-            //    if (repeated[i + 1] != repeated[i])
-            //    {
-            //        Points.Push(repeated[i]);
-            //    }
-            //}
-            //for (int i = 0; i < Points.Count; i++)
-            //{
-            //    Console.WriteLine(Points.ElementAt(i).X.ToString() + " , " + Points.ElementAt(i).Y.ToString());
-            //} 
-            #endregion
-            //for(int i=0;i< unique.Count;i++)
-            //{
-            //    System.Drawing.Point p = new System.Drawing.Point((int)unique.ElementAt(i).X, (int)unique.ElementAt(i).Y);
-            //    CvInvoke.Circle(im, p, 0, new MCvScalar(255, 255, 255), 2);
-            //}
-            //for (int i = 0; i < query.Count; i++)
-            //{
-            //    System.Drawing.Point p = new System.Drawing.Point((int)query.ElementAt(i).X, (int)query.ElementAt(i).Y);
-            //    CvInvoke.Circle(img, p, 0, new MCvScalar(51, 42, 42), 4);
-            //}
-            im.Save("d://im/planDraft5.bmp");
-
-            #region
-            //    Image<Gray, byte> imgOut2 = img.Convert<Gray, byte>().ThresholdBinary(new Gray(100), new Gray(255));
-            //    VectorOfVectorOfPoint contors2 = new VectorOfVectorOfPoint();
-            //    Mat hier2 = new Mat();
-            //    CvInvoke.FindContours(imgOut2, contors2, hier2, Emgu.CV.CvEnum.RetrType.External, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
-            //    Console.WriteLine(contors2.Size);
-
-            //    int index = 0;
-
-            //    for (int i = 0; i < contors2.Size; i++)
-            //    {
-            //        VectorOfPoint approx = new VectorOfPoint();
-            //        double perimeter = CvInvoke.ArcLength(contors2[i], true);
-            //        CvInvoke.ApproxPolyDP(contors2[i], approx, 0.04 * perimeter, true);
-            //        if (approx.Size == 2)
-            //        {
-            //            List<Vector3> verticess = new List<Vector3>();
-            //            index = i;
-            //            for (int j = 0; j < contors2[index].Size; j++)
-            //            {
-            //                verticess.Add(new Vector3(contors2[index][j].X, contors2[index][j].Y * -1, 0));
-            //            }
-            //            List<Vector3> ord = Ordering(verticess);
-            //            Vector3 P1 = ord[0];
-            //            Vector3 P2 = ord[ord.Count - 1];
-            //            Line L = new Line(P1, P2);
-            //            string Message = GetLineType(ord);
-            //            verticess.Add(new Vector3(contors2[index][0].X, contors2[index][0].Y * -1, 0));
-            //            Polyline grids = new Polyline(verticess);
-            //            grids.Layer = new Layer("Grids");
-            //            grids.Layer.Color = AciColor.Blue;
-            //            dxfDocument.AddEntity(grids);
-            //            #region MyRegion
-            //            //if (Message == "Vertical Line")
-            //            //{
-            //            //    VerticalLines.Add(L);
-            //            //}
-            //            //else if (Message == "Horizontal Line")
-            //            //{
-            //            //    HorizontalLines.Add(L);
-            //            //} 
-            //            #endregion
-            //        }
-
-            //        if (approx.Size > 3)
-            //        {
-            //            List<Vector3> verticess = new List<Vector3>();
-            //            index = i;
-            //            for (int j = 0; j < contors2[index].Size; j++)
-            //            {
-            //                verticess.Add(new Vector3(contors2[index][j].X, contors2[index][j].Y * -1, 0));
-            //            }
-            //            verticess.Add(new Vector3(contors2[index][0].X, contors2[index][0].Y * -1, 0));
-            //            Polyline Circle = new Polyline(verticess);
-            //            Circle.Layer = new Layer("Bubbles");
-            //            Circle.Layer.Color = AciColor.Red;
-            //            dxfDocument.AddEntity(Circle);
+            //            Ends_Mod.Add(Ends_HZ[j]);
             //        }
             //    }
-            #endregion
-            //    dxfDocument.DrawingVariables.AcadVer = DxfVersion.AutoCad2010;
-            //    dxfDocument.Save("d://dxfs/draftIntersection2.dxf");  /////////////
+            //}
+
+            //List<Vector2> Start_HZ_Points = new List<Vector2>();
+            //List<Vector2> End_HZ_Points = new List<Vector2>();
+
+            //for (int i = 0; i < Starts_HZ.Count; i++)
+            //{
+            //    Start_HZ_Points.Add(new Vector2(Starts_HZ[i].X, Starts_HZ[i].Y * -1));
+            //}
+
+            //for (int i = 0; i < Ends_Mod.Count; i++)
+            //{
+            //    End_HZ_Points.Add(new Vector2(Ends_Mod[i].X, Ends_Mod[i].Y * -1));
+            //}
+
+            //for (int i = 0; i < Start_HZ_Points.Count; i++)
+            //{
+            //    Line L = new Line(Start_HZ_Points[i], End_HZ_Points[i]);
+            //    L.Linetype = Linetype.Center;
+            //    L.Layer = new Layer("Grids");
+            //    L.Layer.Color = AciColor.Red;
+            //    dxfDocument.AddEntity(L);
+            //}
+
+            //List<Point> Starts_VL = new List<Point>();
+            //List<Point> Ends_VL = new List<Point>();
+            //List<Point> Starts_VL2 = new List<Point>();
+            //List<Point> Starts_VL3 = new List<Point>();
+
+            //foreach (var p in contorsList_Max_Y)
+            //{
+            //    Point P1 = p.OrderBy(p0 => p0.Y).First();
+            //    Starts_VL.Add(P1);
+            //}
+            //for (int i = 0; i < Starts_VL.Count / 2; i++)
+            //{
+            //    Starts_VL2.Add(Starts_VL[i]);
+            //}
+            //Starts_VL3 = Starts_VL.Except(Starts_VL2).ToList();
+
+
+            //foreach (var p in contorsList_Min_Y)
+            //{
+            //    Point P1 = p.OrderBy(p0 => p0.Y).Last();
+            //    Ends_VL.Add(P1);
+            //}
+
+            //List<Vector2> Start_VL_Points = new List<Vector2>();
+            //List<Vector2> End_VL_Points = new List<Vector2>();
+
+            //for (int i = 0; i < Starts_VL3.Count; i++)
+            //{
+            //    Start_VL_Points.Add(new Vector2(Starts_VL3[i].X, Starts_VL3[i].Y * -1));
+            //}
+
+            //for (int i = 0; i < Ends_VL.Count; i++)
+            //{
+            //    End_VL_Points.Add(new Vector2(Ends_VL[i].X, Ends_VL[i].Y * -1));
+            //}
+
+            //for (int i = 0; i < Start_VL_Points.Count; i++)
+            //{
+            //    Line L = new Line(Start_VL_Points[i], End_VL_Points[i]);
+            //    L.Linetype = Linetype.Center;
+            //    L.Layer = new Layer("Grids");
+            //    L.Layer.Color = AciColor.Red;
+            //    dxfDocument.AddEntity(L);
+            //}
+
+            //List<Vector2> Centers1 = new List<Vector2>();
+            //List<Vector2> Centers2 = new List<Vector2>();
+            //List<Vector2> Centers3 = new List<Vector2>();
+            //List<Vector2> Centers4 = new List<Vector2>();
+
+            //for (int i = 0; i < Start_HZ_Points.Count; i++)
+            //{
+            //    Centers1.Add(new Vector2(Start_HZ_Points[i].X + 5, Start_HZ_Points[i].Y));
+            //}
+
+            //for (int i = 0; i < Start_HZ_Points.Count; i++)
+            //{
+            //    Circle C = new Circle(Centers1[i], 5);
+            //    C.Layer = new Layer("Bubbles");
+            //    C.Layer.Color = AciColor.Red;
+            //    dxfDocument.AddEntity(C);
+            //}
+
+            //for (int i = 0; i < End_HZ_Points.Count; i++)
+            //{
+            //    Centers2.Add(new Vector2(End_HZ_Points[i].X - 5, End_HZ_Points[i].Y));
+            //}
+
+            //for (int i = 0; i < End_HZ_Points.Count; i++)
+            //{
+            //    Circle C = new Circle(Centers2[i], 5);
+            //    C.Layer = new Layer("Bubbles");
+            //    C.Layer.Color = AciColor.Red;
+            //    dxfDocument.AddEntity(C);
+            //}
+
+            //for (int i = 0; i < Start_VL_Points.Count; i++)
+            //{
+            //    Centers3.Add(new Vector2(Start_VL_Points[i].X, Start_VL_Points[i].Y - 5));
+            //}
+
+            //for (int i = 0; i < Start_VL_Points.Count; i++)
+            //{
+            //    Circle C = new Circle(Centers3[i], 5);
+            //    C.Layer = new Layer("Bubbles");
+            //    C.Layer.Color = AciColor.Red;
+            //    dxfDocument.AddEntity(C);
+            //}
+
+            //for (int i = 0; i < End_VL_Points.Count; i++)
+            //{
+            //    Centers4.Add(new Vector2(End_VL_Points[i].X, End_VL_Points[i].Y + 5));
+            //}
+
+            //for (int i = 0; i < End_VL_Points.Count; i++)
+            //{
+            //    Circle C = new Circle(Centers4[i], 5);
+            //    C.Layer = new Layer("Bubbles");
+            //    C.Layer.Color = AciColor.Red;
+            //    dxfDocument.AddEntity(C);
+            //}
+
+            //dxfDocument.DrawingVariables.AcadVer = DxfVersion.AutoCad2010;
+            //dxfDocument.Save("e://Grids_2.dxf");
+
         }
     }
 }
-
