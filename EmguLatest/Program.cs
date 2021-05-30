@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -72,161 +72,325 @@ namespace slabDraft
 
         static void Main(string[] args)
         {
+            //Creating a DXF File :
             DxfDocument dxfDocument = new DxfDocument();
 
-            string fileName = "d://im/plan.PNG";
+            //Reading Information from the image :
+            string fileName = "e://NewNew.PNG";
             Image<Gray, byte> imgo = new Image<Gray, byte>(fileName);
             Image<Gray, byte> img = ~imgo;  //////////////////////////////////
-
             Image<Gray, byte> imgOut = img.Convert<Gray, byte>()
                 .ThresholdBinary(new Gray(100), new Gray(255))
                 ;
-
             Image<Gray, byte> im = new Image<Gray, byte>(img.Width, img.Height);
-
+           
             //Find Contours && Lines from contours :
             VectorOfVectorOfPoint contors = new VectorOfVectorOfPoint();
             Mat hier = new Mat();
-
-            CvInvoke.FindContours(imgOut, contors, hier, Emgu.CV.CvEnum.RetrType.List, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
+            CvInvoke.FindContours(imgOut, contors, hier, Emgu.CV.CvEnum.RetrType.Ccomp, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
             CvInvoke.DrawContours(im, contors, -1, new MCvScalar(255, 255, 255));
-
-            List<Vector3> vertices = new List<Vector3>();
-
-            for (int i = 0; i < contors.Size; i++)
+          
+            //Finding The Maximum Value of X,Y in each direction :
+            var maxX = contors.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.X);
+            var minX = contors.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.X);
+            var maxY = contors.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.Y);
+            var minY = contors.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.Y);
+               
+            //Find The Contour which contains the maximum value which calculated in the previous step &&Drawing The Bubbles:
+           
+            var contorsList_Min_Y = contors.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.Y == minY ))
+                .ToList();
+            for (int i = 0; i < contorsList_Min_Y.Count; i++)
             {
-                for (int j = 0; j < contors[i].Size; j++)
+                List<Vector3> Vertex = new List<Vector3>();
+                for (int j = 0; j < contorsList_Min_Y[i].Length; j++)
                 {
-                    vertices.Add(new Vector3(contors[i][j].X, contors[i][j].Y, 0));
-                } 
+                    Vertex.Add(new Vector3(contorsList_Min_Y[i][j].X, contorsList_Min_Y[i][j].Y * -1, 0));
+                    Polyline P = new Polyline(Vertex);
+                    P.Layer = new Layer("Bubbles");
+                    dxfDocument.AddEntity(P);
+                }
             }
 
-               var query = vertices.GroupBy(x => x)   ////Repeated Points
-              .Where(g => g.Count() > 1)
-              .Select(y => y.Key)
-              .ToList();
+            var contorsList_Max_Y = contors.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.Y == maxY ))
+                .ToList();
+            for (int i = 0; i < contorsList_Max_Y.Count; i++)
+            {
+                List<Vector3> Vertex = new List<Vector3>();
+                for (int j = 0; j < contorsList_Max_Y[i].Length; j++)
+                {
+                    Vertex.Add(new Vector3(contorsList_Max_Y[i][j].X, contorsList_Max_Y[i][j].Y * -1, 0));
+                    Polyline P = new Polyline(Vertex);
+                    P.Layer = new Layer("Bubbles");
+                    dxfDocument.AddEntity(P);
+                }
+            }
 
-            var unique = vertices.Except(query).ToList();
-            #region MyRegion
-            //List<Vector3> repeated = new List<Vector3>();
+            var contorsList_Max_X = contors.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.X == maxX))
+                .ToList();
+            for (int i = 0; i < contorsList_Max_X.Count; i++)
+            {
+                List<Vector3> Vertex = new List<Vector3>();
+                for (int j = 0; j < contorsList_Max_X[i].Length; j++)
+                {
+                    Vertex.Add(new Vector3(contorsList_Max_X[i][j].X, contorsList_Max_X[i][j].Y * -1, 0));
+                    Polyline P = new Polyline(Vertex);
+                    P.Layer = new Layer("Bubbles");
+                    dxfDocument.AddEntity(P);
+                }
+            }
+
+            var contorsList_Min_X = contors.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.X == minX))
+                .ToList();
+            for (int i = 0; i < contorsList_Min_Y.Count; i++)
+            {
+                List<Vector3> Vertex = new List<Vector3>();
+                for (int j = 0; j < contorsList_Min_X[i].Length; j++)
+                {
+                    Vertex.Add(new Vector3(contorsList_Min_X[i][j].X, contorsList_Min_X[i][j].Y * -1, 0));
+                    Polyline P = new Polyline(Vertex);
+                    P.Layer = new Layer("Bubbles");
+                    dxfDocument.AddEntity(P);
+                }
+            }
+
+            //Creating an intermmideate image to help : 
+            Image<Gray, byte> ims0 = new Image<Gray, byte>(img.Width, img.Height);
+            
+            //Deleting the contours of the maximum value-->Deleting the Bubbles
+            foreach (var p in contorsList_Max_X)
+            {
+                foreach (var pt in p)
+                {
+                    CvInvoke.Circle(im, pt, 0, new MCvScalar(0, 0, 0), 7);
+                }
+            }
+            
+            foreach (var p in contorsList_Min_X)
+            {
+                foreach (var pt in p)
+                {
+                    CvInvoke.Circle(im, pt, 0, new MCvScalar(0, 0, 0), 7);
+                }
+            }
+            
+            foreach (var p in contorsList_Max_Y)
+            {
+                foreach (var pt in p)
+                {
+                    CvInvoke.Circle(im, pt, 0, new MCvScalar(0, 0, 0), 7);
+                }
+            }
+   
+            foreach (var p in contorsList_Min_Y)
+            {
+                foreach (var pt in p)
+                {
+                    CvInvoke.Circle(im, pt, 0, new MCvScalar(0, 0, 0), 7);
+                }
+            }
+            //This steps for drawing the text of the bubbles then Deleting them from the image and Drawing them in the dxf
+            VectorOfVectorOfPoint contors2 = new VectorOfVectorOfPoint();
+            Mat hier2 = new Mat();
+
+            CvInvoke.FindContours(im, contors2, hier2, Emgu.CV.CvEnum.RetrType.Ccomp, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
+            CvInvoke.DrawContours(ims0, contors2, -1, new MCvScalar(255, 255, 255));
+            
+            var maxX2 = contors2.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.X);
+            var minX2 = contors2.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.X);
+            var maxY2 = contors2.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.Y);
+            var minY2 = contors2.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.Y);
+
+            var contorsList_Min_Y2 = contors2.ToArrayOfArray().ToList()
+               .Where(z => z.ToList().Any(p => p.Y == minY2|| p.Y == minY2+1|| p.Y == minY2+2|| p.Y == minY2+3|| p.Y == minY2+4|| p.Y == minY2+5||
+               p.Y == minY2+6|| p.Y == minY2+7|| p.Y == minY2+8
+               || p.Y == minY2-1|| p.Y == minY2-2|| p.Y == minY2-3|| p.Y == minY2-4|| p.Y == minY2-5|| p.Y == minY2-6|| p.Y == minY2-7|| p.Y == minY2-8
+               ))
+               .ToList();
+
+            for (int i = 0; i < contorsList_Min_Y2.Count; i++)
+            {
+                List<Vector3> Vertex = new List<Vector3>();
+                for (int j = 0; j < contorsList_Min_Y2[i].Length; j++)
+                {
+                    Vertex.Add(new Vector3(contorsList_Min_Y2[i][j].X, contorsList_Min_Y2[i][j].Y * -1, 0));
+                    Polyline P = new Polyline(Vertex);
+                    P.Layer = new Layer("Bubbles Text");
+                    dxfDocument.AddEntity(P);
+                }
+            }
+            var contorsList_Max_Y2 = contors2.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.Y == maxY2|| p.Y == maxY2+1|| p.Y == maxY2+2|| p.Y == maxY2+3|| p.Y == maxY2+4
+                || p.Y == maxY2-1|| p.Y == maxY2-2|| p.Y == maxY2-3|| p.Y == maxY2-4 || p.Y == maxY2+5|| p.Y == maxY2+6|| p.Y == maxY2+7|| p.Y == maxY2+8
+                || p.Y == maxY2-5|| p.Y == maxY2-6|| p.Y == maxY2-7|| p.Y == maxY2-8
+                ))
+                .ToList();
+            for (int i = 0; i < contorsList_Max_Y2.Count; i++)
+            {
+                List<Vector3> Vertex = new List<Vector3>();
+                for (int j = 0; j < contorsList_Max_Y2[i].Length; j++)
+                {
+                    Vertex.Add(new Vector3(contorsList_Max_Y2[i][j].X, contorsList_Max_Y2[i][j].Y * -1, 0));
+                    Polyline P = new Polyline(Vertex);
+                    P.Layer = new Layer("Bubbles Text");
+                    dxfDocument.AddEntity(P);
+                }
+            }
+            var contorsList_Max_X2 = contors2.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.X == maxX2|| p.X == maxX2+1|| p.X == maxX2+2|| p.X == maxX2+3|| p.X == maxX2+4
+                || p.X == maxX2-1|| p.X == maxX2-2|| p.X == maxX2-3|| p.X == maxX2-4 || p.X == maxX2+5|| p.X == maxX2+6|| p.X == maxX2+7|| p.X == maxX2+8
+                || p.X == maxX2-5|| p.X == maxX2-6|| p.X == maxX2-7|| p.X == maxX2-8
+                ))
+                .ToList();
+            for (int i = 0; i < contorsList_Max_X2.Count; i++)
+            {
+                List<Vector3> Vertex = new List<Vector3>();
+                for (int j = 0; j < contorsList_Max_X2[i].Length; j++)
+                {
+                    Vertex.Add(new Vector3(contorsList_Max_X2[i][j].X, contorsList_Max_X2[i][j].Y * -1, 0));
+                    Polyline P = new Polyline(Vertex);
+                    P.Layer = new Layer("Bubbles Text");
+                    dxfDocument.AddEntity(P);
+                }
+            }
+            var contorsList_Min_X2 = contors2.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.X == minX2|| p.X == minX2+1|| p.X == minX2+2|| p.X == minX2+3|| p.X == minX2+4
+                || p.X == minX2-1|| p.X == minX2-2|| p.X == minX2-3|| p.X == minX2-4 || p.X == minX2+5|| p.X == minX2+6|| p.X == minX2+7|| p.X == minX2+8
+                || p.X == minX2-5|| p.X == minX2-6|| p.X == minX2-7|| p.X == minX2-8
+                ))
+                .ToList();
+            for (int i = 0; i < contorsList_Min_X2.Count; i++)
+            {
+                List<Vector3> Vertex = new List<Vector3>();
+                for (int j = 0; j < contorsList_Min_X2[i].Length; j++)
+                {
+                    Vertex.Add(new Vector3(contorsList_Min_X2[i][j].X, contorsList_Min_X2[i][j].Y * -1, 0));
+                    Polyline P = new Polyline(Vertex);
+                    P.Layer = new Layer("Bubbles Text");
+                    dxfDocument.AddEntity(P);
+                }
+            }
+            foreach (var p in contorsList_Max_X2)
+            {
+                foreach (var pt in p)
+                {
+                    CvInvoke.Circle(ims0, pt, 7, new MCvScalar(0, 0, 0), 22);
+                }
+            }
+            foreach (var p in contorsList_Min_X2)
+            {
+                foreach (var pt in p)
+                {
+                    CvInvoke.Circle(ims0, pt, 7, new MCvScalar(0, 0, 0), 22);
+                }
+            }
+            foreach (var p in contorsList_Max_Y2)
+            {
+                foreach (var pt in p)
+                {
+                    CvInvoke.Circle(ims0, pt, 7, new MCvScalar(0, 0, 0), 22);
+                }
+            }
+            foreach (var p in contorsList_Min_Y2)
+            {
+                foreach (var pt in p)
+                {
+                    CvInvoke.Circle(ims0, pt, 7, new MCvScalar(0, 0, 0), 22);
+                }
+            }
+
+            //Drawing Grids :
+            VectorOfVectorOfPoint contors3 = new VectorOfVectorOfPoint();
+            Mat hier3 = new Mat();
+
+            CvInvoke.FindContours(ims0, contors3, hier3, Emgu.CV.CvEnum.RetrType.Ccomp, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
+
+            var maxX3 = contors3.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.X);
+            var minX3 = contors3.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.X);
+            var maxY3 = contors3.ToArrayOfArray().ToList().SelectMany(i => i).Max(p => p.Y);
+            var minY3 = contors3.ToArrayOfArray().ToList().SelectMany(i => i).Min(p => p.Y);
+
+            var contorsList_Min_X3 = contors3.ToArrayOfArray().ToList()
+                 .Where(z => z.ToList().Any(p => p.X == minX3 || p.X == minX3 + 1 || p.X == minX3 + 2 || p.X == minX3 + 3 || p.X == minX3 + 4
+                 || p.X == minX3 - 1 || p.X == minX3 - 2 || p.X == minX3 - 3 || p.X == minX3 - 4 || p.X == minX3 + 5 || p.X == minX3 + 6 || p.X == minX3 + 7 || p.X == minX3 + 8
+                 || p.X == minX3 - 5 || p.X == minX3 - 6 || p.X == minX3 - 7 || p.X == minX3 - 8
+                 ))
+                 .ToList();
 
 
+            var contorsList_Max_X3 = contors3.ToArrayOfArray().ToList()
+               .Where(z => z.ToList().Any(p => p.X == maxX3 || p.X == maxX3 + 1 || p.X == maxX3 + 2 || p.X == maxX3 + 3 || p.X == maxX3 + 4
+               || p.X == maxX3 - 1 || p.X == maxX3 - 2 || p.X == maxX3 - 3 || p.X == maxX3 - 4 || p.X == maxX3 + 5 || p.X == maxX3 + 6 || p.X == maxX3 + 7 || p.X == maxX3 + 8
+               || p.X == maxX3 - 5 || p.X == maxX3 - 6 || p.X == maxX3 - 7 || p.X == maxX3 - 8
+               ))
+               .ToList();
 
-            //for (int a = 0; a < contors.Size; a++)
-            //{
-            //    for (int i = 0; i < contors[a].Size; i++)
-            //    {
-            //        Vector3 basePoint = vertices[i];
-            //        for (int j = 0; j < contors[a].Size; j++)
-            //        {
-            //            if (i == j)
-            //            {
-            //                continue;
-            //            }
-            //            else
-            //            {
-            //                if (vertices[i] == vertices[j])
-            //                {
-            //                    repeated.Add(new Vector3(vertices[j].X, vertices[j].Y, 0));
-            //                }
-            //            }
-            //        }
-            //    } 
-            //}
-            //Stack<Vector3> Points = new Stack<Vector3>();
 
-            //for (int i = 0; i < repeated.Count; i++)
-            //{
-            //    if (i == repeated.Count - 1)
-            //    {
-            //        Points.Push(repeated[repeated.Count - 1]);
-            //        break;
-            //    }
-            //    if (repeated[i + 1] != repeated[i])
-            //    {
-            //        Points.Push(repeated[i]);
-            //    }
-            //}
-            //for (int i = 0; i < Points.Count; i++)
-            //{
-            //    Console.WriteLine(Points.ElementAt(i).X.ToString() + " , " + Points.ElementAt(i).Y.ToString());
-            //} 
-            #endregion
-            //for(int i=0;i< unique.Count;i++)
-            //{
-            //    System.Drawing.Point p = new System.Drawing.Point((int)unique.ElementAt(i).X, (int)unique.ElementAt(i).Y);
-            //    CvInvoke.Circle(im, p, 0, new MCvScalar(255, 255, 255), 2);
-            //}
-            //for (int i = 0; i < query.Count; i++)
-            //{
-            //    System.Drawing.Point p = new System.Drawing.Point((int)query.ElementAt(i).X, (int)query.ElementAt(i).Y);
-            //    CvInvoke.Circle(img, p, 0, new MCvScalar(51, 42, 42), 4);
-            //}
-            im.Save("d://im/planDraft5.bmp");
+            var contorsList_Max_Y3 = contors3.ToArrayOfArray().ToList()
+                .Where(z => z.ToList().Any(p => p.Y == maxY3 || p.Y == maxY3 + 1 || p.Y == maxY3 + 2 || p.Y == maxY3 + 3 || p.Y == maxY3 + 4
+                || p.Y == maxY3 - 1 || p.Y == maxY3 - 2 || p.Y == maxY3 - 3 || p.Y == maxY3 - 4 || p.Y == maxY3 + 5 || p.Y == maxY3 + 6 || p.Y == maxY3 + 7 || p.Y == maxY3 + 8
+                || p.Y == maxY3 - 5 || p.Y == maxY3 - 6 || p.Y == maxY3 - 7 || p.Y == maxY3 - 8
+                ))
+                .ToList();
 
-            #region
-            //    Image<Gray, byte> imgOut2 = img.Convert<Gray, byte>().ThresholdBinary(new Gray(100), new Gray(255));
-            //    VectorOfVectorOfPoint contors2 = new VectorOfVectorOfPoint();
-            //    Mat hier2 = new Mat();
-            //    CvInvoke.FindContours(imgOut2, contors2, hier2, Emgu.CV.CvEnum.RetrType.External, Emgu.CV.CvEnum.ChainApproxMethod.ChainApproxSimple);
-            //    Console.WriteLine(contors2.Size);
+            var contorsList_Min_Y3 = contors3.ToArrayOfArray().ToList()
+               .Where(z => z.ToList().Any(p => p.Y == minY3 || p.Y == minY3 + 1 || p.Y == minY3 + 2 || p.Y == minY3 + 3 || p.Y == minY3 + 4 || p.Y == minY3 + 5 ||
+               p.Y == minY3 + 6 || p.Y == minY3 + 7 || p.Y == minY3 + 8
+               || p.Y == minY3 - 1 || p.Y == minY3 - 2 || p.Y == minY3 - 3 || p.Y == minY3 - 4 || p.Y == minY3 - 5 || p.Y == minY3 - 6 || p.Y == minY3 - 7 || p.Y == minY3 - 8
+               ))
+               .ToList();
 
-            //    int index = 0;
+            List<Vector3> Start_HZ = new List<Vector3>();
+            for(int i = 0; i < contorsList_Min_X3.Count; i++)
+            {
+                Start_HZ.Add(new Vector3(contorsList_Min_X3[i][0].X, contorsList_Min_X3[i][0].Y * -1, 0));
+            }
+            Start_HZ = Ordering2(Start_HZ);
 
-            //    for (int i = 0; i < contors2.Size; i++)
-            //    {
-            //        VectorOfPoint approx = new VectorOfPoint();
-            //        double perimeter = CvInvoke.ArcLength(contors2[i], true);
-            //        CvInvoke.ApproxPolyDP(contors2[i], approx, 0.04 * perimeter, true);
-            //        if (approx.Size == 2)
-            //        {
-            //            List<Vector3> verticess = new List<Vector3>();
-            //            index = i;
-            //            for (int j = 0; j < contors2[index].Size; j++)
-            //            {
-            //                verticess.Add(new Vector3(contors2[index][j].X, contors2[index][j].Y * -1, 0));
-            //            }
-            //            List<Vector3> ord = Ordering(verticess);
-            //            Vector3 P1 = ord[0];
-            //            Vector3 P2 = ord[ord.Count - 1];
-            //            Line L = new Line(P1, P2);
-            //            string Message = GetLineType(ord);
-            //            verticess.Add(new Vector3(contors2[index][0].X, contors2[index][0].Y * -1, 0));
-            //            Polyline grids = new Polyline(verticess);
-            //            grids.Layer = new Layer("Grids");
-            //            grids.Layer.Color = AciColor.Blue;
-            //            dxfDocument.AddEntity(grids);
-            //            #region MyRegion
-            //            //if (Message == "Vertical Line")
-            //            //{
-            //            //    VerticalLines.Add(L);
-            //            //}
-            //            //else if (Message == "Horizontal Line")
-            //            //{
-            //            //    HorizontalLines.Add(L);
-            //            //} 
-            //            #endregion
-            //        }
+            List<Vector3> End_HZ = new List<Vector3>();
+            for (int i = 0; i < contorsList_Max_X3.Count; i++)
+            {
+                End_HZ.Add(new Vector3(contorsList_Max_X3[i][0].X, contorsList_Max_X3[i][0].Y * -1, 0));
+            }
+            End_HZ = Ordering2(End_HZ);
 
-            //        if (approx.Size > 3)
-            //        {
-            //            List<Vector3> verticess = new List<Vector3>();
-            //            index = i;
-            //            for (int j = 0; j < contors2[index].Size; j++)
-            //            {
-            //                verticess.Add(new Vector3(contors2[index][j].X, contors2[index][j].Y * -1, 0));
-            //            }
-            //            verticess.Add(new Vector3(contors2[index][0].X, contors2[index][0].Y * -1, 0));
-            //            Polyline Circle = new Polyline(verticess);
-            //            Circle.Layer = new Layer("Bubbles");
-            //            Circle.Layer.Color = AciColor.Red;
-            //            dxfDocument.AddEntity(Circle);
-            //        }
-            //    }
-            #endregion
-            //    dxfDocument.DrawingVariables.AcadVer = DxfVersion.AutoCad2010;
-            //    dxfDocument.Save("d://dxfs/draftIntersection2.dxf");  /////////////
+            for (int i = 0; i < Start_HZ.Count; i++)
+            {
+                Line L = new Line(Start_HZ[i], End_HZ[i]);
+                L.Layer = new Layer("Horizontal Grids");
+                L.Linetype = Linetype.Center;
+                L.LinetypeScale = 40;
+                dxfDocument.AddEntity(L);
+            }
+
+            List<Vector3> Start_VL = new List<Vector3>();
+            for (int i = 0; i < contorsList_Min_Y3.Count; i++)
+            {
+                Start_VL.Add(new Vector3(contorsList_Min_Y3[i][0].X, contorsList_Min_Y3[i][0].Y * -1, 0));
+            }
+            Start_VL = Ordering(Start_VL);
+
+            List<Vector3> End_VL = new List<Vector3>();
+            for (int i = 0; i < contorsList_Max_Y3.Count; i++)
+            {
+                End_VL.Add(new Vector3(contorsList_Max_Y3[i][0].X, contorsList_Max_Y3[i][0].Y * -1, 0));
+            }
+
+            End_VL = Ordering(End_VL);
+            for (int i = 0; i < Start_VL.Count; i++)
+            {
+                Line L = new Line(Start_VL[i], End_VL[i]);
+                L.Layer = new Layer("Vertical Grids");
+                L.Linetype = Linetype.Center;
+                L.LinetypeScale = 40;
+                dxfDocument.AddEntity(L);
+            }
+            dxfDocument.DrawingVariables.AcadVer = DxfVersion.AutoCad2010;
+            dxfDocument.Save("e://Meda_Trial4.dxf");
         }
     }
 }
-
